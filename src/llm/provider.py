@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import os
-import google.generativeai as genai
+import google.genai as genai
 import groq
 from anthropic import Anthropic
 
@@ -15,8 +15,7 @@ class GroqProvider(LLMProvider):
         self.model = model
         self.client = groq.Groq(api_key=self.api_key)
 
-    def generate_tests(self, code: str, language: str) -> str:
-        prompt = f"Write unit tests for the following {language} code. Output only the code and no explanations.\n\n```{language}\n{code}\n```"
+    def generate_tests(self, prompt: str, language: str) -> str:
         response = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=self.model,
@@ -27,12 +26,13 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str = None, model: str = 'gemini-1.5-pro-latest'):
         self.api_key = api_key or os.environ.get('GEMINI_API_KEY')
         self.model = model
-        genai.configure(api_key=self.api_key)
+        self.client = genai.Client(api_key=self.api_key)
 
-    def generate_tests(self, code: str, language: str) -> str:
-        prompt = f"Write unit tests for the following {language} code. Output only the code and no explanations.\n\n```{language}\n{code}\n```"
-        model = genai.GenerativeModel(self.model)
-        response = model.generate_content(prompt)
+    def generate_tests(self, prompt: str, language: str) -> str:
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
         return response.text
 
 class ClaudeProvider(LLMProvider):
@@ -41,8 +41,7 @@ class ClaudeProvider(LLMProvider):
         self.model = model
         self.client = Anthropic(api_key=self.api_key)
 
-    def generate_tests(self, code: str, language: str) -> str:
-        prompt = f"Write unit tests for the following {language} code. Output only the code and no explanations.\n\n```{language}\n{code}\n```"
+    def generate_tests(self, prompt: str, language: str) -> str:
         response = self.client.messages.create(
             max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],

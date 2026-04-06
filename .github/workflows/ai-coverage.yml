@@ -21,39 +21,21 @@ jobs:
           # Check out the pull request HEAD commit instead of the merge commit
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: Generate Real Python Coverage
+      # Add your own testing command here!
+      # For example: 
+      # - npm test --coverage (for JS/TS)
+      # - pytest --cov=src --cov-report=xml (for Python)
+      # - mvn test jacoco:report (for Java)
+      - name: Your Language Test Suite
         run: |
-          pip install pytest coverage pytest-cov
-          # The '|| true' ensures the pipeline continues even if tests fail (which they might initially)
-          coverage run --source=example,src -m pytest || true
-          coverage xml -o python_coverage.xml || true
+          echo "Assuming your test tool outputs coverage.xml or jacoco.xml..."
+          # Put your test commands here. We use '|| true' so the CI continues to AI generation even if tests fail
+          # npm run test || true
 
-      - name: Generate Real Java Coverage
-        run: |
-          # Run Maven to generate JaCoCo coverage report
-          mvn clean test jacoco:report || true
-
-      - name: AI Coverage Booster (Python)
+      - name: AI Coverage Booster
         uses: ./
         with:
-          coverage_file: 'python_coverage.xml'
-          threshold: '75.0'
-          provider: 'groq' 
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          
-      - name: AI Coverage Booster (Java)
-        uses: ./
-        with:
-          coverage_file: 'target/site/jacoco/jacoco.xml'
+          coverage_file: 'coverage.xml' # Change to whatever your tool emits (e.g., target/site/jacoco/jacoco.xml)
           threshold: '75.0'
           provider: 'groq' 
           github_token: ${{ secrets.GITHUB_TOKEN }}
