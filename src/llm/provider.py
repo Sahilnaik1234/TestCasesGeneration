@@ -10,7 +10,7 @@ class LLMProvider(ABC):
         pass
 
 class GroqProvider(LLMProvider):
-    def __init__(self, api_key: str = None, model = "llama3-8b-8192"):
+    def __init__(self, api_key: str = None, model = "llama-3.1-8b-instant"):
         self.api_key = api_key or os.environ.get('GROQ_API_KEY')
         self.model = model
         self.client = groq.Groq(api_key=self.api_key)
