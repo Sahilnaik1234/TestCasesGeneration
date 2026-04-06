@@ -1,0 +1,51 @@
+name: 'AI Test Case Generator'
+description: 'Automatically generates test cases if coverage is below 75% and creates a new PR.'
+author: 'AI Developer'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  coverage_file:
+    description: 'Path to the coverage.xml file'
+    required: true
+  threshold:
+    description: 'Coverage threshold percentage'
+    required: false
+    default: '75.0'
+  provider:
+    description: 'LLM Provider to use (groq, gemini, claude)'
+    required: false
+    default: 'groq'
+  github_token:
+    description: 'GitHub token for PR management'
+    required: true
+  pr_number:
+    description: 'Current PR number if triggered from a PR'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install Dependencies
+      run: pip install -r ${{ github.action_path }}/requirements.txt
+      shell: bash
+
+    - name: Run Test Generator
+      run: |
+        export PYTHONPATH=${{ github.action_path }}:$PYTHONPATH
+        export GITHUB_TOKEN=${{ inputs.github_token }}
+        
+        args="--coverage-file ${{ inputs.coverage_file }} --threshold ${{ inputs.threshold }} --provider ${{ inputs.provider }}"
+        if [ -n "${{ inputs.pr_number }}" ]; then
+          args="$args --pr-number ${{ inputs.pr_number }}"
+        fi
+        
+        python ${{ github.action_path }}/src/main.py $args
+      shell: bash

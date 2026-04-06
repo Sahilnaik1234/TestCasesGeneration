@@ -1,0 +1,7 @@
+PyGithub
+requests
+google-generativeai
+groq
+anthropic
+beautifulsoup4
+lxml
