@@ -44,9 +44,9 @@ class GitHelper:
             return False
         
         # Configure user if not exists (helpful in CI)
-        subprocess.run(["git", "config", "user.name", "AI Test Generator"], check=False)
-        subprocess.run(["git", "config", "user.email", "actions@github.com"], check=False)
+        subprocess.run(["git", "config", "user.name", "github-actions"], check=False)
+        subprocess.run(["git", "config", "user.email", "github-actions@github.com"], check=False)
         
         GitHelper.run_cmd(["git", "commit", "-m", commit_message])
-        GitHelper.run_cmd(["git", "push", "origin", branch_name])
+        GitHelper.run_cmd(["git", "push", "origin", "HEAD"])
         return True

@@ -1,6 +1,6 @@
 PyGithub
 requests
-google-generativeai
+google-genai
 groq
 anthropic
 beautifulsoup4

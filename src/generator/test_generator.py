@@ -33,56 +33,58 @@ class TestGenerator:
             
     def _build_prompt(self, original_filename: str, code: str) -> str:
         return f"""
-You are an expert AI test generator that supports any programming language.
-I need you to write unit tests for the following file to improve its code coverage. 
-The tests should be comprehensive.
+You are a test generator.
 
-Original File path: {original_filename}
+STRICT RULES:
+- Output ONLY valid JSON
+- No explanation
+- No markdown (no ```json)
+- No extra text
+- JSON must be valid and complete
 
-Original Code:
-```
-{code}
-```
-
-Based on conventional project structures for this programming language (e.g., placing Python tests in a `tests/` directory with `test_` prefix, Java tests in `src/test/java/...`, or JS tests as `*.test.js`), decide where the test file should be written and what its exact full path should be.
-
-Return your response EXCLUSIVELY as a JSON array of objects. Each object should have two keys: `test_file_path` and `test_code`. Example:
+Format:
 [
   {{
-    "test_file_path": "tests/test_example.py",
-    "test_code": "import unittest\\n..."
+    "test_file_path": "tests/test_file.py",
+    "test_code": "..."
   }}
 ]
 
-DO NOT output any markdown blocks like ```json around the response. Only output raw JSON exactly.
+Generate unit tests for:
+{code}
 """
 
     def _parse_and_save_tests(self, response: str, original_filename: str):
-        # Clean response in case LLM added markdown code blocks
-        clean_res = re.sub(r"^```json\s*", "", response.strip())
-        clean_res = re.sub(r"^```\w*\s*", "", clean_res)
-        clean_res = re.sub(r"```$", "", clean_res.strip())
+        def extract_json(response: str):
+            try:
+                # Extract JSON array only
+                match = re.search(r"\[.*\]", response, re.DOTALL)
+                if match:
+                    return json.loads(match.group(0))
+                else:
+                    raise ValueError("No JSON found")
+            except Exception as e:
+                print("JSON parsing failed:", e)
+                print("Raw response:", response)
+                return []
+
+        tests = extract_json(response)
         
-        try:
-            tests = json.loads(clean_res)
-            for test in tests:
-                test_path = test.get("test_file_path")
-                test_code = test.get("test_code")
+        for test in tests:
+            test_path = test.get("test_file_path")
+            test_code = test.get("test_code")
+            
+            if not test_path or not test_code:
+                continue
+            
+            # Make sure directories exist
+            os.makedirs(os.path.dirname(test_path), exist_ok=True)
+            
+            # Append if exists or write new
+            mode = 'a' if os.path.exists(test_path) else 'w'
+            with open(test_path, mode, encoding='utf-8') as f:
+                if mode == 'a':
+                    f.write("\n\n")
+                f.write(test_code)
                 
-                if not test_path or not test_code:
-                    continue
-                
-                # Make sure directories exist
-                os.makedirs(os.path.dirname(test_path), exist_ok=True)
-                
-                # Append if exists or write new
-                mode = 'a' if os.path.exists(test_path) else 'w'
-                with open(test_path, mode, encoding='utf-8') as f:
-                    if mode == 'a':
-                        f.write("\n\n")
-                    f.write(test_code)
-                    
-                print(f"Successfully wrote tests to {test_path}")
-        except json.JSONDecodeError as e:
-            print(f"Failed to parse LLM response for {original_filename} as JSON. Error: {e}")
-            print(f"Raw response: {response}")
+            print(f"Successfully wrote tests to {test_path}")
